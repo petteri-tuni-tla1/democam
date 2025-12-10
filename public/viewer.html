@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>Live Slots</h1>
+        <p class="subtitle">Images update automatically when you take a photo.</p>
+      </div>
+      <div class="status-indicator" id="wsStatus">
+        Connecting…
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="slot-card">
+        <div class="slot-header">
+          <span class="slot-title">Slot 1</span>
+        </div>
+        <div class="slot-body" id="slot1">
+          <div class="placeholder">Waiting for image…</div>
+        </div>
+      </section>
+
+      <section class="slot-card">
+        <div class="slot-header">
+          <span class="slot-title">Slot 2</span>
+        </div>
+        <div class="slot-body" id="slot2">
+          <div class="placeholder">Waiting for image…</div>
+        </div>
+      </section>
+
+      <section class="slot-card">
+        <div class="slot-header">
+          <span class="slot-title">Slot 3</span>
+        </div>
+        <div class="slot-body" id="slot3">
+          <div class="placeholder">Waiting for image…</div>
+        </div>
+      </section>
+
+      <section class="slot-card">
+        <div class="slot-header">
+          <span class="slot-title">Slot 4</span>
+        </div>
+        <div class="slot-body" id="slot4">
+          <div class="placeholder">Waiting for image…</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const wsStatus = document.getElementById("wsStatus");
+
+    function setStatus(text, state) {
+      wsStatus.textContent = text;
+      wsStatus.dataset.state = state;
+    }
+
+    const ws = new WebSocket(`ws://${location.host}`);
+
+    ws.onopen = () => setStatus("Connected", "ok");
+    ws.onclose = () => setStatus("Disconnected", "error");
+    ws.onerror = () => setStatus("Error", "error");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const div = document.getElementById(`slot${data.slot}`);
+      if (!div) return;
+
+      div.innerHTML = `
+        <img 
+          src="${data.imageUrl}?t=${Date.now()}"
+          alt="Slot ${data.slot} image"
+        >
+      `;
+    };
+  </script>
+</body>
+</html>

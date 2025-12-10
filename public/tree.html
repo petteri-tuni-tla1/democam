@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tree Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="tree.css">
+</head>
+<body>
+  <div class="app">
+
+
+    <main class="tree-wrapper">
+      <div class="tree-image">
+        <!-- Branch slots -->
+        <div class="branch-slot branch-slot-1">
+          <div class="slot-body" id="slot1">
+            <img src="uploads/1.png" alt="1 Slot 1" >
+          </div>
+        </div>
+
+        <div class="branch-slot branch-slot-2">
+          <div class="slot-body" id="slot2">
+            <img src="uploads/2.png" alt="2 Slot 2" >
+          </div>
+        </div>
+
+        <div class="branch-slot branch-slot-3">
+          <div class="slot-body" id="slot3">
+            <img src="uploads/3.png" alt="Slot 3" >
+          </div>
+        </div>
+
+        <div class="branch-slot branch-slot-4">
+          <div class="slot-body" id="slot4">
+            <img src="uploads/4.png" >            
+          </div>
+        </div>
+
+        <div class="branch-slot branch-slot-5">
+          <div class="slot-body" id="slot5">
+            <img src="uploads/5.png" >            
+          </div>
+        </div>
+
+        <div class="branch-slot branch-slot-6">
+          <div class="slot-body" id="slot6">
+            <img src="uploads/6.png"  alt="Slot 6"  >            
+          </div>
+        </div>
+        <div class="branch-slot branch-slot-7">
+          <div class="slot-body" id="slot7">
+            <img src="uploads/7.png"  alt="Slot 7"  >            
+          </div>
+        </div>
+
+      </div>
+    </main>
+    <footer class="header">
+      <div>
+        <button id="clearBtn" class="btn-clear">Clear tree</button>                       
+      </div>
+      <div class="status-indicator" id="wsStatus">
+        Connecting…
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const wsStatus = document.getElementById("wsStatus");
+
+    function setStatus(text, state) {
+      wsStatus.textContent = text;
+      wsStatus.dataset.state = state;
+    }
+
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${protocol}://${location.host}`);
+    // const ws = new WebSocket(`ws://${location.host}`);
+
+    ws.onopen = () => setStatus("Connected", "ok");
+    ws.onclose = () => setStatus("Disconnected", "error");
+    ws.onerror = () => setStatus("Error", "error");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const div = document.getElementById(`slot${data.slot}`);
+      if (!div) return;
+
+    // make sure this branch slot is visible again
+    const branch = div.closest(".branch-slot");
+    if (branch) {
+      branch.classList.remove("hidden");
+    }      
+      div.innerHTML = `
+        <img
+          src="${data.imageUrl}?t=${Date.now()}"
+          alt="Slot ${data.slot} image"
+        >
+      `;      
+    };
+  
+    // 🔹 Clear button logic
+  const clearBtn = document.getElementById("clearBtn");
+  const allBranchSlots = document.querySelectorAll(".branch-slot");
+
+  clearBtn.addEventListener("click", () => {
+    allBranchSlots.forEach(slot => {
+      // hide the frame completely
+      slot.classList.add("hidden");
+
+      const body = slot.querySelector(".slot-body");
+      if (body) {
+        body.innerHTML = ""; // no placeholder, just tree
+      }
+    });
+  });
+  
+  
+  
+  </script>
+</body>
+</html>
+

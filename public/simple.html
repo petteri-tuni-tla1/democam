@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Take a Photo</title>
+</head>
+<body>
+  <h2>Take a Photo</h2>
+  <input type="file"   accept="image/*;capture=camera"  capture="camera" id="cameraInput">
+
+
+
+
+  <img id="preview" style="max-width:100%; display:none; margin-top:10px;">
+  <script>
+    const input = document.getElementById("cameraInput");
+    const preview = document.getElementById("preview");
+
+    input.addEventListener("change", async () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = "block";
+
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      await fetch("/upload", { method: "POST", body: formData });
+      alert("Photo uploaded!");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera Capture</title>
+  
+   <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <h1>Capture & Upload</h1>
+    <div class="subtitle">Choose a slot and take a photo</div>
+
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+    </div>
+
+    <div class="controls">
+
+      <div class="zoom-group">
+        <label for="zoomSlider">Zoom</label>
+        <input type="range" id="zoomSlider">
+      </div>
+
+
+      <button id="snapBtn" class="btn-primary">
+        📸 Take photo & upload
+      </button>
+      <div class="slot-group">
+        <div class="slot-label-title">Placeholder slot</div>
+        <div class="slot-options">
+          <label class="slot-option">
+            <input type="radio" name="slot" value="1" checked>
+            <span>1</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="2">
+            <span>2</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="3">
+            <span>3</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="4">
+            <span>4</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="5">
+            <span>5</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="6">
+            <span>6</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="7">
+            <span>7</span>
+          </label>          
+        </div>
+      </div>
+
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+  </div>
+
+  
+
+
+<script>
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const snapBtn = document.getElementById("snapBtn");
+  const statusEl = document.getElementById("status");
+  const zoomSlider = document.getElementById("zoomSlider");
+
+  let videoTrack = null;
+  let zoomSupported = false;
+  let digitalZoomFactor = 1; // used when hardware zoom not available
+
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      });
+      video.srcObject = stream;
+
+      videoTrack = stream.getVideoTracks()[0];
+
+      const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+      console.log("Camera capabilities:", capabilities);
+
+      if (capabilities.zoom) {
+        // ✅ Hardware zoom supported – use camera zoom
+        zoomSupported = true;
+        zoomSlider.min = capabilities.zoom.min;
+        zoomSlider.max = capabilities.zoom.max;
+        zoomSlider.step = capabilities.zoom.step || 0.1;
+        zoomSlider.value = capabilities.zoom.min;
+
+        zoomSlider.addEventListener("input", async () => {
+          try {
+            await videoTrack.applyConstraints({
+              advanced: [{ zoom: parseFloat(zoomSlider.value) }]
+            });
+          } catch (e) {
+            console.error("Zoom failed:", e);
+          }
+        });
+      } else {
+        // ❌ No hardware zoom – use digital zoom in capture step
+        zoomSupported = false;
+        zoomSlider.min = 1;
+        zoomSlider.max = 3;   // 1x–3x digital zoom
+        zoomSlider.step = 0.1;
+        zoomSlider.value = 1;
+
+        zoomSlider.addEventListener("input", () => {
+          digitalZoomFactor = parseFloat(zoomSlider.value);
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Unable to access camera. Check permissions.";
+    }
+  }
+
+  startCamera();
+
+  snapBtn.onclick = async () => {
+
+
+    
+    const selected = document.querySelector("input[name='slot']:checked");
+    if (!selected) {
+      alert("Select a slot first.");
+      return;
+    }
+
+
+
+    const slot = selected.value;
+      const nextSlot = slot % 7 + 1;
+      document.querySelector(`input[name='slot'][value='${nextSlot}']`).checked = true;
+
+
+
+    snapBtn.disabled = true;
+    statusEl.textContent = `Capturing slot ${slot}...`;
+
+    const ctx = canvas.getContext("2d");
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+
+    canvas.width = vw;
+    canvas.height = vh;
+
+    if (zoomSupported) {
+      // 📷 Hardware zoom already applied in the video feed – just draw it
+      ctx.drawImage(video, 0, 0, vw, vh);
+    } else {
+      // 🔍 Digital zoom: crop center area based on digitalZoomFactor
+      const z = digitalZoomFactor || 1;
+      const sw = vw / z;
+      const sh = vh / z;
+      const sx = (vw - sw) / 2;
+      const sy = (vh - sh) / 2;
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, vw, vh);
+    }
+
+    canvas.toBlob(async (blob) => {
+      try {
+        const formData = new FormData();
+        formData.append("photo", blob, `${slot}.png`);
+
+        statusEl.textContent = "Uploading...";
+        const res = await fetch("/upload?slot=" + slot, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+
+        statusEl.textContent = `Uploaded to slot ${slot}`;
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "Error while uploading.";
+      } finally {
+        snapBtn.disabled = false;
+      }
+    }, "image/png");
+  };
+</script>
+
+</body>
+</html>

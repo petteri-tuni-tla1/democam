@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera Capture</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .video-wrapper {
+      background: #020617;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      background: black;
+    }
+
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slot-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slot-label-title {
+      font-size: 0.95rem;
+      color: #d1d5db;
+    }
+
+    .slot-options {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .slot-option {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      padding: 10px 0;
+      cursor: pointer;
+      user-select: none;
+      font-size: 1.1rem;
+      background: #111827;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+      text-align: center;
+    }
+
+    .slot-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .slot-option span {
+      display: inline-block;
+      width: 100%;
+    }
+
+    .slot-option:active {
+      transform: scale(0.97);
+    }
+
+    .slot-option input:checked + span {
+      background: #2563eb;
+      color: white;
+      border-radius: 999px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.2rem;
+      border-radius: 999px;
+      border: none;
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 10px rgba(34, 197, 94, 0.25);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 4px;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Capture & Upload</h1>
+    <div class="subtitle">Choose a slot and take a photo</div>
+
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+    </div>
+
+    <div class="controls">
+      <div class="slot-group">
+        <div class="slot-label-title">Placeholder slot</div>
+        <div class="slot-options">
+          <label class="slot-option">
+            <input type="radio" name="slot" value="1" checked>
+            <span>1</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="2">
+            <span>2</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="3">
+            <span>3</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="4">
+            <span>4</span>
+          </label>
+        </div>
+      </div>
+
+      <button id="snapBtn" class="btn-primary">
+        📸 Take photo & upload
+      </button>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const snapBtn = document.getElementById("snapBtn");
+    const statusEl = document.getElementById("status");
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Unable to access camera. Check permissions.";
+      }
+    }
+
+    startCamera();
+
+    snapBtn.onclick = async () => {
+      const selected = document.querySelector("input[name='slot']:checked");
+      if (!selected) {
+        alert("Select a slot first.");
+        return;
+      }
+      const slot = selected.value;
+
+      snapBtn.disabled = true;
+      statusEl.textContent = `Capturing slot ${slot}...`;
+
+      // Draw current video frame to canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        try {
+          const formData = new FormData();
+          formData.append("photo", blob, `${slot}.png`);
+
+          statusEl.textContent = "Uploading...";
+          const res = await fetch("/upload?slot=" + slot, {
+            method: "POST",
+            body: formData
+          });
+
+          if (!res.ok) {
+            throw new Error("Upload failed");
+          }
+
+          statusEl.textContent = `Uploaded to slot ${slot}`;
+        } catch (e) {
+          console.error(e);
+          statusEl.textContent = "Error while uploading.";
+        } finally {
+          snapBtn.disabled = false;
+        }
+      }, "image/png");
+    };
+  </script>
+</body>
+</html>

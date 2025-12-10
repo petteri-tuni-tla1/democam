@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera Capture</title>
+  
+   <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <h1>Capture & Upload</h1>
+    <div class="subtitle">Choose a slot and take a photo</div>
+
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+    </div>
+
+    <div class="controls">
+      <div class="slot-group">
+        <div class="slot-label-title">Placeholder slot</div>
+        <div class="slot-options">
+          <label class="slot-option">
+            <input type="radio" name="slot" value="1" checked>
+            <span>1</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="2">
+            <span>2</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="3">
+            <span>3</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="4">
+            <span>4</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="5">
+            <span>5</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="6">
+            <span>6</span>
+          </label>
+          <label class="slot-option">
+            <input type="radio" name="slot" value="7">
+            <span>7</span>
+          </label>          
+        </div>
+      </div>
+
+      <button id="snapBtn" class="btn-primary">
+        📸 Take photo & upload
+      </button>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const snapBtn = document.getElementById("snapBtn");
+    const statusEl = document.getElementById("status");
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Unable to access camera. Check permissions.";
+      }
+    }
+
+    startCamera();
+
+    snapBtn.onclick = async () => {
+      const selected = document.querySelector("input[name='slot']:checked");
+      if (!selected) {
+        alert("Select a slot first.");
+        return;
+      }
+      const slot = selected.value;
+      const nextSlot = slot % 7 + 1;
+      document.querySelector(`input[name='slot'][value='${nextSlot}']`).checked = true;
+
+      snapBtn.disabled = true;
+      statusEl.textContent = `Capturing slot ${slot}...`;
+
+      // Draw current video frame to canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        try {
+          const formData = new FormData();
+          formData.append("photo", blob, `${slot}.png`);
+
+          statusEl.textContent = "Uploading...";
+          const res = await fetch("/upload?slot=" + slot, {
+            method: "POST",
+            body: formData
+          });
+
+          if (!res.ok) {
+            throw new Error("Upload failed");
+          }
+
+          statusEl.textContent = `Uploaded to slot ${slot}`;
+          console.log(`Photo uploaded to slot ${slot}`);
+        } catch (e) {
+          console.error(e);
+          statusEl.textContent = "Error while uploading.";
+        } finally {
+          snapBtn.disabled = false;
+        }
+      }, "image/png");
+    };
+  </script>
+</body>
+</html>

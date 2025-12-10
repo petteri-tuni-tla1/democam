@@ -1,0 +1,172 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e5e7eb;
+  background: radial-gradient(circle at top, #1f2937, #020617 55%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  width: 100%;
+  max-width: 960px;
+  padding: 16px;
+}
+
+/* Header */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.status-indicator {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid #4b5563;
+  white-space: nowrap;
+}
+
+.status-indicator::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+
+/* WebSocket status colors */
+.status-indicator[data-state="ok"] {
+  border-color: #22c55e;
+}
+
+.status-indicator[data-state="ok"]::before {
+  background: #22c55e;
+}
+
+.status-indicator[data-state="error"] {
+  border-color: #ef4444;
+}
+
+.status-indicator[data-state="error"]::before {
+  background: #ef4444;
+}
+
+/* Grid layout */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+/* Slot cards */
+
+.slot-card {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.slot-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid #111827;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slot-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+/* Image area */
+
+.slot-body {
+  position: relative;
+  padding: 8px;
+  height: 0;
+  padding-bottom: 70%; /* aspect ratio ~ 4:3 */
+  background: radial-gradient(circle at top, #111827, #020617 60%);
+}
+
+.slot-body img {
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #374151;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* Placeholder text before first image */
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* Small screens tweaks */
+
+@media (max-width: 600px) {
+  .app {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .grid {
+    gap: 10px;
+  }
+}
