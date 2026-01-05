@@ -11,6 +11,16 @@ Live update is implemented using web socket.
 The tree view is designed for ordinary workstation landscape screen.
 The should work fine in the (Android) mobile device browser.
 
+# Technical instructions
+
+## Installation & prerequisites - dev environment
+
+Requires node.js
+
+
+
+
+
 # Improvement backlog
 
 - Swapping between user and environment camera
